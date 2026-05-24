@@ -1,39 +1,26 @@
-import Redis from "ioredis";
+let RedisClient: any;
+let redis: any;
 
-const redis = new Redis(
-  process.env.REDIS_URL || "redis://127.0.0.1:6379"
-);
+try {
+  RedisClient = require("ioredis");
 
-export type FleetNode = {
-  id: string;
-  lat: number;
-  lng: number;
-  speed?: number;
-  timestamp?: number;
-};
+  redis = new RedisClient({
+    host: process.env.REDIS_HOST || "127.0.0.1",
+    port: Number(process.env.REDIS_PORT || 6379),
+    maxRetriesPerRequest: 2
+  });
+} catch (err) {
+  console.warn("Redis not available — using mock store");
 
-const KEY = "fleet:graph:state";
-
-export async function getGraphState() {
-  const data = await redis.get(KEY);
-  return data ? JSON.parse(data) : { nodes: [] };
+  redis = {
+    get: async () => null,
+    set: async () => null,
+    del: async () => null,
+    hset: async () => null,
+    hget: async () => null,
+    publish: async () => null,
+    subscribe: async () => null
+  };
 }
 
-export async function saveGraphState(state: any) {
-  await redis.set(KEY, JSON.stringify(state));
-}
-
-export async function upsertNode(node: FleetNode) {
-  const state = await getGraphState();
-
-  const index = state.nodes.findIndex(
-    (n: FleetNode) => n.id === node.id
-  );
-
-  if (index >= 0) state.nodes[index] = node;
-  else state.nodes.push(node);
-
-  await saveGraphState(state);
-
-  return node;
-}
+export { redis };

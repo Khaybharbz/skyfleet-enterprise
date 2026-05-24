@@ -1,56 +1,50 @@
 "use client";
 
-import "leaflet/dist/leaflet.css";
+import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
+import "leaflet/dist/leaflet.css";
 
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  Polyline,
-} from "react-leaflet";
+// dynamically load react-leaflet to avoid SSR crash
+const MapContainer = dynamic(
+  () => import("react-leaflet").then((m) => m.MapContainer),
+  { ssr: false }
+);
 
-type Node = {
-  id: string;
-  lat: number;
-  lng: number;
-};
+const TileLayer = dynamic(
+  () => import("react-leaflet").then((m) => m.TileLayer),
+  { ssr: false }
+);
 
-export default function MapInner({
-  nodes = [],
-}: {
-  nodes: Node[];
-}) {
-  const [mounted, setMounted] = useState(false);
+const Marker = dynamic(
+  () => import("react-leaflet").then((m) => m.Marker),
+  { ssr: false }
+);
+
+const Popup = dynamic(
+  () => import("react-leaflet").then((m) => m.Popup),
+  { ssr: false }
+);
+
+export default function MapInner() {
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    setReady(true);
   }, []);
 
-  if (!mounted) return null;
-
-  const center: [number, number] = [6.5244, 3.3792];
+  if (!ready) return <div>Loading map...</div>;
 
   return (
     <MapContainer
-      center={center}
+      center={[6.5244, 3.3792]}
       zoom={12}
-      style={{ height: "100%", width: "100%" }}
+      style={{ height: "500px", width: "100%" }}
     >
       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
-      {nodes.map((node) => (
-        <Marker
-          key={node.id}
-          position={[node.lat, node.lng]}
-        />
-      ))}
-
-      {nodes.length > 1 && (
-        <Polyline
-          positions={nodes.map((n) => [n.lat, n.lng])}
-        />
-      )}
+      <Marker position={[6.5244, 3.3792]}>
+        <Popup>SkyFleet Hub (Lagos)</Popup>
+      </Marker>
     </MapContainer>
   );
 }

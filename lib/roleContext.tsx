@@ -1,46 +1,41 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { jwtDecode } from "jwt-decode";
 
-export type Role = "admin" | "user" | "driver";
+type Role = "admin" | "user" | "driver";
 
-type RoleContextType = {
-  role: Role;
-};
+interface RoleContextType {
+  role: Role | null;
+  setRole: (role: Role | null) => void;
+}
 
 const RoleContext = createContext<RoleContextType>({
-  role: "user",
+  role: null,
+  setRole: () => {}
 });
 
-export function RoleProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const [role, setRole] = useState<Role>("user");
+export const RoleProvider = ({ children }: { children: React.ReactNode }) => {
+  const [role, setRole] = useState<Role | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) return;
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
-    try {
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      setRole(payload.role || "user");
-    } catch {
-      setRole("user");
+    if (token) {
+      try {
+        const decoded: any = jwtDecode(token);
+        setRole(decoded.role || null);
+      } catch {
+        setRole(null);
+      }
     }
   }, []);
 
   return (
-    <RoleContext.Provider value={{ role }}>
+    <RoleContext.Provider value={{ role, setRole }}>
       {children}
     </RoleContext.Provider>
   );
-}
+};
 
 export const useRole = () => useContext(RoleContext);

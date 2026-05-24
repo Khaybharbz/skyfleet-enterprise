@@ -1,15 +1,10 @@
 import { SignJWT, jwtVerify } from "jose";
 
 const secret = new TextEncoder().encode(
-  process.env.AUTH_SECRET || "dev_secret"
+  process.env.AUTH_SECRET || "dev_secret_key_change_me"
 );
 
-export type JwtPayload = {
-  id: string;
-  role: "admin" | "user" | "driver";
-};
-
-export async function signToken(payload: JwtPayload) {
+export async function createToken(payload: any) {
   return await new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
@@ -18,6 +13,10 @@ export async function signToken(payload: JwtPayload) {
 }
 
 export async function verifyToken(token: string) {
-  const { payload } = await jwtVerify(token, secret);
-  return payload as JwtPayload;
+  try {
+    const { payload } = await jwtVerify(token, secret);
+    return payload;
+  } catch {
+    return null;
+  }
 }
