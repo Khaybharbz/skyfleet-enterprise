@@ -1,30 +1,39 @@
 import Redis from "ioredis";
 
-export const redis = new Redis({
-  host: "localhost",
-  port: 6379,
-});
+const redis = new Redis(
+  process.env.REDIS_URL || "redis://127.0.0.1:6379"
+);
 
-/**
- * Store node in partitioned graph
- */
-export async function upsertNode(
-  id: string,
-  node: any
-) {
-  await redis.hset(
-    "stgat:nodes",
-    id,
-    JSON.stringify(node)
-  );
+export type FleetNode = {
+  id: string;
+  lat: number;
+  lng: number;
+  speed?: number;
+  timestamp?: number;
+};
+
+const KEY = "fleet:graph:state";
+
+export async function getGraphState() {
+  const data = await redis.get(KEY);
+  return data ? JSON.parse(data) : { nodes: [] };
 }
 
-export async function getAllNodes() {
-  const data = await redis.hgetall(
-    "stgat:nodes"
+export async function saveGraphState(state: any) {
+  await redis.set(KEY, JSON.stringify(state));
+}
+
+export async function upsertNode(node: FleetNode) {
+  const state = await getGraphState();
+
+  const index = state.nodes.findIndex(
+    (n: FleetNode) => n.id === node.id
   );
 
-  return Object.values(data).map((n) =>
-    JSON.parse(n)
-  );
+  if (index >= 0) state.nodes[index] = node;
+  else state.nodes.push(node);
+
+  await saveGraphState(state);
+
+  return node;
 }

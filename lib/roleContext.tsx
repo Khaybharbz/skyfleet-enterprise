@@ -7,16 +7,14 @@ import {
   useState,
 } from "react";
 
-import { Role, decodeToken } from "./auth";
+export type Role = "admin" | "user" | "driver";
 
 type RoleContextType = {
   role: Role;
-  setRole: (role: Role) => void;
 };
 
 const RoleContext = createContext<RoleContextType>({
   role: "user",
-  setRole: () => {},
 });
 
 export function RoleProvider({
@@ -27,14 +25,19 @@ export function RoleProvider({
   const [role, setRole] = useState<Role>("user");
 
   useEffect(() => {
-    const tokenData = decodeToken();
-    if (tokenData?.role) {
-      setRole(tokenData.role);
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      setRole(payload.role || "user");
+    } catch {
+      setRole("user");
     }
   }, []);
 
   return (
-    <RoleContext.Provider value={{ role, setRole }}>
+    <RoleContext.Provider value={{ role }}>
       {children}
     </RoleContext.Provider>
   );

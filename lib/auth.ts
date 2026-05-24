@@ -1,33 +1,23 @@
-export type Role = "admin" | "user" | "driver";
+import { SignJWT, jwtVerify } from "jose";
 
-export type TokenPayload = {
+const secret = new TextEncoder().encode(
+  process.env.AUTH_SECRET || "dev_secret"
+);
+
+export type JwtPayload = {
   id: string;
-  role: Role;
-  exp?: number;
+  role: "admin" | "user" | "driver";
 };
 
-export function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("token");
+export async function signToken(payload: JwtPayload) {
+  return await new SignJWT(payload)
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime("7d")
+    .sign(secret);
 }
 
-export function decodeToken(): TokenPayload | null {
-  try {
-    const token = getToken();
-    if (!token) return null;
-
-    const base64 = token.split(".")[1];
-    return JSON.parse(atob(base64));
-  } catch {
-    return null;
-  }
-}
-
-export function getRole(): Role {
-  const payload = decodeToken();
-  return payload?.role || "user";
-}
-
-export function isAuthenticated(): boolean {
-  return !!getToken();
+export async function verifyToken(token: string) {
+  const { payload } = await jwtVerify(token, secret);
+  return payload as JwtPayload;
 }

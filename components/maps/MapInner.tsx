@@ -14,17 +14,20 @@ type Node = {
   id: string;
   lat: number;
   lng: number;
-  speed?: number;
 };
 
-export default function MapInner({ nodes }: { nodes: Node[] }) {
-  const [isClient, setIsClient] = useState(false);
+export default function MapInner({
+  nodes = [],
+}: {
+  nodes: Node[];
+}) {
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setIsClient(true);
+    setMounted(true);
   }, []);
 
-  if (!isClient) return null;
+  if (!mounted) return null;
 
   const center: [number, number] = [6.5244, 3.3792];
 
@@ -34,20 +37,16 @@ export default function MapInner({ nodes }: { nodes: Node[] }) {
       zoom={12}
       style={{ height: "100%", width: "100%" }}
     >
-      <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
+      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
-      {/* MARKERS */}
-      {nodes?.map((node) => (
+      {nodes.map((node) => (
         <Marker
           key={node.id}
           position={[node.lat, node.lng]}
         />
       ))}
 
-      {/* ROUTE TRAIL (simple polyline) */}
-      {nodes?.length > 1 && (
+      {nodes.length > 1 && (
         <Polyline
           positions={nodes.map((n) => [n.lat, n.lng])}
         />
